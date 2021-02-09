@@ -1,0 +1,14 @@
+#Max length of lore in characters
+MAX_LENGTH: 140
+
+#Max characters per line of lore
+MAX_LINE_LENGTH: 25
+
+#How much xp is required and removed when writing lore
+XP_COST: 3
+
+#Whether players can overwrite lore on items which already have lore
+LORE_OVERWRITE_ALLOWED: false
+
+#Whether players can write lore on non-stackable items
+LORE_STACKABLES_ALLOWED: false

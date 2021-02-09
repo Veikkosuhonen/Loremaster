@@ -1,0 +1,17 @@
+main: Loremaster
+api-version: '1.16'
+
+name: Loremaster
+version: '0.1.0'
+description: da
+author: Veikmaster
+
+commands:
+
+  Loremaster:
+    description: Loremaster command
+    usage: "§bHold the item into which you wish to write lore, and type§r /<command> §nwrite lore here§r.
+    §bYou can use color codes in the lore: §9§nhttps://www.spigotmc.org/attachments/example2-png.188806/§r
+    §bUse a separate \\n to add line breaks.
+    By default, an item can have lore written to it only once, so be careful not to mess up!"
+    tab-complete: -1
