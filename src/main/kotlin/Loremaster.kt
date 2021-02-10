@@ -52,22 +52,40 @@ class Loremaster : JavaPlugin(), CommandExecutor {
         var line = ""
         var charsOnLine = 0
         var totalLength = 0
-        args.forEach {
+        val colorCodes = mutableListOf<Char>()
 
-            if (it.length > MAX_LINE_LENGTH) {
+        fun addWord(it: String) {
+            if (it.split("\\n").any { it.length > MAX_LINE_LENGTH }) {
                 Messager.msg(player, "§6A word was too long and does not fit on a single line, please split it into smaller parts")
-                return true
+                throw IllegalArgumentException()
+            }
+
+            // find and store color codes:
+            it.forEachIndexed { index, c ->
+                if (c == '&') {
+                    if (index + 1 < it.length) {
+                        if (it[index + 1] == 'r') colorCodes.clear()
+                        else colorCodes.add(it[index + 1])
+                    }
+                }
             }
 
             if (it.contains("\\n")) {
                 line += it.substringBefore("\\n")
                 lore.add(line.replace('&', '§'))
-                line = it.substringAfter("\\n") + " "
+                val remainder = it.substringAfter("\\n")
+                // start a new line, append color codes
+                line = ""
+                colorCodes.forEach { line += "&$it" }
                 charsOnLine = 0
+                addWord(remainder)
+
             } else {
                 if (charsOnLine + it.length > MAX_LINE_LENGTH) {
                     lore.add(line.replace('&', '§'))
+                    // start a new line, append color codes
                     line = ""
+                    colorCodes.forEach { line += "&$it" }
                     charsOnLine = 0
                 }
                 line += "$it "
@@ -75,7 +93,14 @@ class Loremaster : JavaPlugin(), CommandExecutor {
                 totalLength += it.length + 1
             }
         }
+
+        args.forEach {
+            try {
+                addWord(it)
+            } catch (iae: IllegalArgumentException) { return true }
+        }
         lore.add(line.replace('&', '§'))
+
 
         if (totalLength > MAX_LENGTH) {
             Messager.msg(player, "§6Lore was too long ($totalLength), maximum length is $MAX_LENGTH")
@@ -84,7 +109,6 @@ class Loremaster : JavaPlugin(), CommandExecutor {
 
         meta.lore = lore
         item.itemMeta = meta
-
         player.level = player.level - XP_COST
 
         Messager.msg(player, "§aSuccess")
