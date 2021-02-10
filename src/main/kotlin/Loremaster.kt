@@ -22,7 +22,10 @@ class Loremaster : JavaPlugin(), CommandExecutor {
 
     override fun onEnable() {
         this.saveDefaultConfig()
+        getCommand("loremaster")?.setExecutor(this)
         getCommand("loremaster")?.setTabCompleter { _, _, _, _ -> listOf<String>() }
+        getCommand("loreclear")?.setExecutor(ClearCommand())
+        getCommand("loreclear")?.setTabCompleter { _, _, _, _ -> listOf<String>() }
     }
 
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
@@ -33,15 +36,15 @@ class Loremaster : JavaPlugin(), CommandExecutor {
 
         if (args.isEmpty()) return false
         if (item.maxStackSize > 1 && !LORE_STACKABLES_ALLOWED) {
-            msg(player, "§6You can only write lore to non-stackable items")
+            Messager.msg(player, "§6You can only write lore to non-stackable items")
             return true
         }
         if (meta.hasLore() && !LORE_OVERWRITE_ALLOWED) {
-            msg(player, "§6This item already has lore")
+            Messager.msg(player, "§6This item already has lore")
             return true
         }
         if (player.level < XP_COST) {
-            msg(player, "§6You need ${XP_COST - player.level} more levels in order to write lore")
+            Messager.msg(player, "§6You need ${XP_COST - player.level} more levels in order to write lore")
             return true
         }
 
@@ -50,9 +53,16 @@ class Loremaster : JavaPlugin(), CommandExecutor {
         var charsOnLine = 0
         var totalLength = 0
         args.forEach {
-            if (it == "\\n") {
+
+            if (it.length > MAX_LINE_LENGTH) {
+                Messager.msg(player, "§6A word was too long and does not fit on a single line, please split it into smaller parts")
+                return true
+            }
+
+            if (it.contains("\\n")) {
+                line += it.substringBefore("\\n")
                 lore.add(line.replace('&', '§'))
-                line = ""
+                line = it.substringAfter("\\n") + " "
                 charsOnLine = 0
             } else {
                 if (charsOnLine + it.length > MAX_LINE_LENGTH) {
@@ -68,21 +78,39 @@ class Loremaster : JavaPlugin(), CommandExecutor {
         lore.add(line.replace('&', '§'))
 
         if (totalLength > MAX_LENGTH) {
-            msg(player, "§6Lore was too long ($totalLength), maximum length is $MAX_LENGTH")
+            Messager.msg(player, "§6Lore was too long ($totalLength), maximum length is $MAX_LENGTH")
             return true
         }
-
-        player.level = player.level - XP_COST
 
         meta.lore = lore
         item.itemMeta = meta
 
-        msg(player, "§aSuccess")
+        player.level = player.level - XP_COST
 
+        Messager.msg(player, "§aSuccess")
         return true
     }
+}
 
-    private fun msg(player: Player, msg: String) {
+class ClearCommand: CommandExecutor {
+    override fun onCommand(sender: CommandSender, p1: Command, p2: String, p3: Array<out String>): Boolean {
+        val player = Bukkit.getPlayer(sender.name) ?: return false
+        val item = player.itemInHand
+        val meta = item.itemMeta ?: return false
+        if (!meta.hasLore()) {
+            Messager.msg(player, "§6This item does not have lore")
+            return true
+        }
+        meta.lore = null
+        item.itemMeta = meta
+
+        Messager.msg(player, "§aSuccess")
+        return true
+    }
+}
+
+object Messager {
+    fun msg(player: Player, msg: String) {
         player.sendMessage("[Loremaster] $msg")
     }
 }
